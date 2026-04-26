@@ -15,7 +15,7 @@
     }
 
     header {
-      padding: 1.25rem 1rem 0.75rem;
+      padding: 1.25rem 1rem 0.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -29,17 +29,34 @@
 
     #status {
       font-size: 0.75rem;
-      color: #888;
+      color: #666;
+    }
+    #status.fetching { color: #888; }
+    #status.ok       { color: #4ade80; }
+    #status.err      { color: #f87171; }
+
+    .section {
+      padding: 0.75rem 0 0.25rem;
     }
 
-    #status.ok { color: #4ade80; }
-    #status.err { color: #f87171; }
+    .section + .section {
+      padding-top: 0.5rem;
+    }
 
-    #grid {
+    .section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #444;
+      padding: 0 1rem 0.5rem;
+    }
+
+    .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 0.75rem;
-      padding: 0.75rem 1rem 2rem;
+      padding: 0 1rem;
     }
 
     .card {
@@ -67,7 +84,7 @@
 
     .freq {
       font-size: 0.65rem;
-      color: #666;
+      color: #555;
       margin-top: -0.2rem;
     }
 
@@ -89,105 +106,151 @@
       overflow: hidden;
     }
 
-    .no-data {
+    /* ── Three distinct card states ── */
+
+    /* 1. Fetching: pulsing, clearly in-progress */
+    .state-fetching {
       font-size: 0.72rem;
-      color: #555;
-      font-style: italic;
+      color: #666;
+      animation: pulse 1.2s ease-in-out infinite;
     }
 
-    .loading { animation: pulse 1.4s ease-in-out infinite; }
+    /* 2. No metadata: station live but doesn't broadcast track info */
+    .state-nodata {
+      font-size: 0.72rem;
+      color: #3a3a3a;
+    }
+
+    /* 3. Error: station unreachable */
+    .state-error {
+      font-size: 0.72rem;
+      color: #7a3030;
+    }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50%       { opacity: 0.3; }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>SG Radio</h1>
-    <span id="status">Loading…</span>
+    <span id="status">—</span>
   </header>
-  <div id="grid"></div>
+
+  <div class="section">
+    <div class="section-label">Chinese</div>
+    <div id="grid-chinese" class="grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Others</div>
+    <div id="grid-others" class="grid"></div>
+  </div>
 
   <script>
     const WORKER_URL = "https://sg-radio-now-playing.sgradio.workers.dev";
     const USE_MOCK = false;
 
-    const MOCK = {
-      stations: [
-        { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946", artist: "Taylor Swift",  title: "Anti-Hero" },
-        { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261", artist: "Cyndi Lauper",  title: "Girls Just Want to Have Fun" },
-        { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f", artist: "Olivia Rodrigo", title: "vampire" },
-        { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a", artist: "Jay Chou",      title: "七里香" },
-        { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", artist: "Bruno Mars",    title: "Just the Way You Are" },
-        { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc", artist: null,            title: "Beethoven — Symphony No. 9" },
-        { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", artist: "Siti Nurhaliza", title: "Cindai" },
-        { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7", artist: "Sheila Majid",  title: "Sinaran" },
-        { id: "cna938",      name: "CNA 938",        freq: "93.8",  color: "#8ac926", artist: null,            title: null },
-        { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e", artist: "A.R. Rahman",   title: "Jai Ho" },
-        { id: "kiss92",      name: "Kiss92",         freq: "92.0",  color: "#ff006e", artist: "Dua Lipa",      title: "Levitating" },
-        { id: "onefm",       name: "One FM 91.3",    freq: "91.3",  color: "#3a86ff", artist: null,            title: null },
-        { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec", artist: "邓紫棋",         title: "光年之外" },
-        { id: "moneyfm",     name: "Money FM 89.3",  freq: "89.3",  color: "#06d6a0", artist: null,            title: "Morning Market Watch" },
-      ],
-      ts: Date.now(),
-    };
+    const CHINESE_IDS = new Set(["yes933", "ufm100"]);
 
-    const grid = document.getElementById("grid");
+    // Scaffold used to create cards immediately on load (before first fetch).
+    // Kept in sync with worker.js STATIONS order.
+    const SCAFFOLD = [
+      { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946" },
+      { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261" },
+      { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f" },
+      { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a" },
+      { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51" },
+      { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc" },
+      { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff" },
+      { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7" },
+      { id: "cna938",      name: "CNA 938",        freq: "93.8",  color: "#8ac926" },
+      { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e" },
+      { id: "kiss92",      name: "Kiss92",         freq: "92.0",  color: "#ff006e" },
+      { id: "onefm",       name: "One FM 91.3",    freq: "91.3",  color: "#3a86ff" },
+      { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec" },
+      { id: "moneyfm",     name: "Money FM 89.3",  freq: "89.3",  color: "#06d6a0" },
+    ];
+
+    const MOCK_STATIONS = [
+      { id: "class95",     artist: "Taylor Swift",   title: "Anti-Hero" },
+      { id: "gold905",     artist: "Cyndi Lauper",   title: "Girls Just Want to Have Fun" },
+      { id: "987fm",       artist: "Olivia Rodrigo", title: "vampire" },
+      { id: "yes933",      artist: "Jay Chou",       title: "七里香" },
+      { id: "love972",     artist: "Bruno Mars",     title: "Just the Way You Are" },
+      { id: "symphony924", artist: null,             title: "Beethoven — Symphony No. 9" },
+      { id: "ria897",      artist: "Siti Nurhaliza", title: "Cindai" },
+      { id: "warna942",    artist: "Sheila Majid",   title: "Sinaran" },
+      { id: "cna938",      artist: null,             title: null },
+      { id: "oli968",      artist: "A.R. Rahman",    title: "Jai Ho" },
+      { id: "kiss92",      artist: "Dua Lipa",       title: "Levitating" },
+      { id: "onefm",       artist: null,             title: null,  error: "timeout" },
+      { id: "ufm100",      artist: "邓紫棋",          title: "光年之外" },
+      { id: "moneyfm",     artist: null,             title: "Morning Market Watch" },
+    ];
+
     const statusEl = document.getElementById("status");
-    let cards = {};
+    const cards = {};
 
-    function renderCards(stations) {
-      if (Object.keys(cards).length === 0) {
-        stations.forEach(s => {
-          const el = document.createElement("div");
-          el.className = "card";
-          el.style.setProperty("--c", s.color);
-          el.innerHTML = `
-            <div class="station-name">${s.name}</div>
-            <div class="freq">${s.freq} FM</div>
-            <div class="song-info"></div>
-          `;
-          grid.appendChild(el);
-          cards[s.id] = el;
-        });
+    // Build all cards immediately with fetching state — no blank flash on load.
+    SCAFFOLD.forEach(s => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.setProperty("--c", s.color);
+      el.innerHTML = `
+        <div class="station-name">${s.name}</div>
+        <div class="freq">${s.freq} FM</div>
+        <div class="song-info"><div class="state-fetching">Getting info…</div></div>
+      `;
+      const grid = document.getElementById(CHINESE_IDS.has(s.id) ? "grid-chinese" : "grid-others");
+      grid.appendChild(el);
+      cards[s.id] = el;
+    });
+
+    function songInfoHTML(s) {
+      if (s.error) {
+        return `<div class="state-error">Station unreachable</div>`;
       }
-      stations.forEach(s => {
-        const el = cards[s.id];
-        if (!el) return;
-        const info = el.querySelector(".song-info");
-        if (s.title) {
-          info.innerHTML = `
-            ${s.artist ? `<div class="artist">${esc(s.artist)}</div>` : ""}
-            <div class="title">${esc(s.title)}</div>
-          `;
-        } else {
-          info.innerHTML = `<div class="no-data">No track info</div>`;
-        }
-      });
+      if (s.title) {
+        return (s.artist ? `<div class="artist">${esc(s.artist)}</div>` : "")
+             + `<div class="title">${esc(s.title)}</div>`;
+      }
+      return `<div class="state-nodata">No track info</div>`;
     }
 
     function esc(str) {
-      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     function fmtTime(ts) {
-      return new Date(ts).toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      return new Date(ts).toLocaleTimeString("en-SG", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      });
     }
 
     async function refresh() {
+      statusEl.textContent = "Updating…";
+      statusEl.className = "fetching";
       try {
-        let data;
+        let stations;
         if (USE_MOCK) {
-          data = { ...MOCK, ts: Date.now() };
+          // Merge scaffold metadata with mock track data for testing
+          stations = SCAFFOLD.map(s => ({
+            ...s,
+            ...(MOCK_STATIONS.find(m => m.id === s.id) || {}),
+          }));
         } else {
           const res = await fetch(WORKER_URL);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          data = await res.json();
+          ({ stations } = await res.json());
         }
-        renderCards(data.stations);
-        statusEl.textContent = `Updated ${fmtTime(data.ts)}`;
+        stations.forEach(s => {
+          const el = cards[s.id];
+          if (el) el.querySelector(".song-info").innerHTML = songInfoHTML(s);
+        });
+        statusEl.textContent = `Updated ${fmtTime(Date.now())}`;
         statusEl.className = "ok";
       } catch (e) {
         statusEl.textContent = "Error — retrying…";
