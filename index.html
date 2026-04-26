@@ -88,6 +88,40 @@
       margin-top: -0.2rem;
     }
 
+    .song-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.1rem;
+    }
+
+    .artwork-wrap {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+    }
+
+    .artwork-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 5px;
+      background: #252525;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    .artwork {
+      width: 44px;
+      height: 44px;
+      border-radius: 5px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .song-text {
+      flex: 1;
+      min-width: 0;
+    }
+
     .artist {
       font-size: 0.7rem;
       color: #aaa;
@@ -213,15 +247,57 @@
       cards[s.id] = el;
     });
 
-    function songInfoHTML(s) {
+    // iTunes Search API for album artwork — cached by "artist|title"
+    const artworkCache = {};
+    async function fetchArtwork(artist, title) {
+      const key = `${artist}|${title}`;
+      if (key in artworkCache) return artworkCache[key];
+      artworkCache[key] = null; // prevent duplicate requests
+      try {
+        const q = encodeURIComponent(`${artist} ${title}`);
+        const res = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=1&entity=song`);
+        const data = await res.json();
+        const item = data.results?.[0];
+        const url = item?.artworkUrl100?.replace("100x100bb", "200x200bb") || null;
+        artworkCache[key] = url;
+        return url;
+      } catch {
+        return null;
+      }
+    }
+
+    function setCardSong(el, s) {
+      const info = el.querySelector(".song-info");
       if (s.error) {
-        return `<div class="state-error">Station unreachable</div>`;
+        info.innerHTML = `<div class="state-error">Station unreachable</div>`;
+        return;
       }
-      if (s.title) {
-        return (s.artist ? `<div class="artist">${esc(s.artist)}</div>` : "")
-             + `<div class="title">${esc(s.title)}</div>`;
+      if (!s.title) {
+        info.innerHTML = `<div class="state-nodata">No track info</div>`;
+        return;
       }
-      return `<div class="state-nodata">No track info</div>`;
+      const artistHtml = s.artist ? `<div class="artist">${esc(s.artist)}</div>` : "";
+      info.innerHTML = `
+        <div class="song-row">
+          <div class="artwork-wrap"><div class="artwork-placeholder"></div></div>
+          <div class="song-text">${artistHtml}<div class="title">${esc(s.title)}</div></div>
+        </div>`;
+
+      const wrap = info.querySelector(".artwork-wrap");
+      const artworkUrl = s.artwork || null;
+      if (artworkUrl) {
+        // Worker already supplied artwork (e.g. Firebase stations)
+        wrap.innerHTML = `<img class="artwork" src="${artworkUrl}" alt="" loading="lazy">`;
+      } else if (s.artist) {
+        // Look up via iTunes
+        fetchArtwork(s.artist, s.title).then(url => {
+          if (!info.isConnected) return;
+          if (url) wrap.innerHTML = `<img class="artwork" src="${url}" alt="" loading="lazy">`;
+          else wrap.style.display = "none";
+        });
+      } else {
+        wrap.style.display = "none";
+      }
     }
 
     function esc(str) {
@@ -240,7 +316,6 @@
       try {
         let stations;
         if (USE_MOCK) {
-          // Merge scaffold metadata with mock track data for testing
           stations = SCAFFOLD.map(s => ({
             ...s,
             ...(MOCK_STATIONS.find(m => m.id === s.id) || {}),
@@ -252,7 +327,7 @@
         }
         stations.forEach(s => {
           const el = cards[s.id];
-          if (el) el.querySelector(".song-info").innerHTML = songInfoHTML(s);
+          if (el) setCardSong(el, s);
         });
         statusEl.textContent = `Updated ${fmtTime(Date.now())}`;
         statusEl.className = "ok";

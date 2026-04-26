@@ -1,10 +1,10 @@
 const STATIONS = [
-  { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/CLASS95AAC.aac" },
+  { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946", tritonMount: "CLASS95" },
   { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/GOLD905AAC.aac" },
   { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/987FMAAC.aac" },
   { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/YES933AAC.aac" },
   { id: "capital958",  name: "Capital 95.8",   freq: "95.8",  color: "#f7b731", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/CAPITAL958FMAAC.aac" },
-  { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/963HAOFMAAC.aac" },
+  { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", firebaseId: 4 },
   { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOVE972FMAAC.aac" },
   { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/SYMPHONY924AAC.aac" },
   { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/RIA897AAC.aac" },
@@ -16,6 +16,51 @@ const STATIONS = [
   { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/UFM_1003AAC.aac" },
   { id: "moneyfm",     name: "Money FM 89.3",  freq: "89.3",  color: "#06d6a0", stream: "https://live.moneyfm893.sg/stream" },
 ];
+
+// Triton Digital NowPlaying API — clean JSON-like XML, no audio buffering needed
+async function fetchTriton(station) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(
+      `https://np.tritondigital.com/public/nowplaying?mountName=${station.tritonMount}&numberToFetch=1&eventType=track`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+    const xml = await res.text();
+    const get = (name) => {
+      const m = xml.match(new RegExp(`name="${name}"[^>]*><!\\[CDATA\\[([^\\]]*)\\]\\]>`));
+      return m ? m[1].trim() || null : null;
+    };
+    return { ...meta(station), title: get("cue_title"), artist: get("track_artist_name") };
+  } catch (err) {
+    clearTimeout(timeout);
+    return { ...meta(station), title: null, artist: null, error: err.message };
+  }
+}
+
+// SPH Media stations use Firebase Realtime DB — returns artist, title, and artwork URL
+async function fetchFirebase(station) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(
+      `https://sphradio-c77a9.firebaseio.com/${station.firebaseId}.json`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+    const data = await res.json();
+    return {
+      ...meta(station),
+      title: data.cue_title || null,
+      artist: data.cue_artist || null,
+      artwork: data.cue_photo_url || null,
+    };
+  } catch (err) {
+    clearTimeout(timeout);
+    return { ...meta(station), title: null, artist: null, error: err.message };
+  }
+}
 
 async function fetchNowPlaying(station) {
   const controller = new AbortController();
@@ -66,7 +111,11 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET" } });
     }
-    const results = await Promise.all(STATIONS.map(fetchNowPlaying));
+    const results = await Promise.all(STATIONS.map(s => {
+      if (s.tritonMount) return fetchTriton(s);
+      if (s.firebaseId)  return fetchFirebase(s);
+      return fetchNowPlaying(s);
+    }));
     return new Response(JSON.stringify({ stations: results, ts: Date.now() }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
     });
