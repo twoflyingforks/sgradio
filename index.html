@@ -165,6 +165,45 @@
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.3; }
     }
+
+    .card[data-stream] { cursor: pointer; }
+
+    .card.playing {
+      background: #222;
+    }
+
+    .eq {
+      display: none;
+      align-items: flex-end;
+      gap: 2px;
+      height: 14px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .card.playing .eq { display: flex; }
+
+    .eq span {
+      display: block;
+      width: 3px;
+      border-radius: 1px;
+      background: var(--c);
+      animation: eq-bounce 0.8s ease-in-out infinite alternate;
+    }
+    .eq span:nth-child(1) { animation-duration: 0.6s; }
+    .eq span:nth-child(2) { animation-duration: 0.9s; animation-delay: 0.15s; }
+    .eq span:nth-child(3) { animation-duration: 0.7s; animation-delay: 0.05s; }
+
+    @keyframes eq-bounce {
+      from { height: 3px; }
+      to   { height: 14px; }
+    }
+
+    .card.stream-error .station-name::after {
+      content: " ✕";
+      font-size: 0.65rem;
+      color: #f87171;
+    }
   </style>
 </head>
 <body>
@@ -192,22 +231,22 @@
     // Scaffold used to create cards immediately on load (before first fetch).
     // Kept in sync with worker.js STATIONS order.
     const SCAFFOLD = [
-      { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946" },
-      { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261" },
-      { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f" },
-      { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a" },
-      { id: "capital958",  name: "Capital 95.8",   freq: "95.8",  color: "#f7b731" },
-      { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da" },
-      { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51" },
-      { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc" },
-      { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff" },
-      { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7" },
-      { id: "cna938",      name: "CNA 938",        freq: "93.8",  color: "#8ac926" },
-      { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e" },
-      { id: "kiss92",      name: "Kiss92",         freq: "92.0",  color: "#ff006e" },
-      { id: "onefm",       name: "One FM 91.3",    freq: "91.3",  color: "#3a86ff" },
-      { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec" },
-      { id: "moneyfm",     name: "Money FM 89.3",  freq: "89.3",  color: "#06d6a0" },
+      { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/CLASS95AAC.aac" },
+      { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/GOLD905AAC.aac" },
+      { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/987FMAAC.aac" },
+      { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/YES933AAC.aac" },
+      { id: "capital958",  name: "Capital 95.8",   freq: "95.8",  color: "#f7b731", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/CAPITAL958FMAAC.aac" },
+      { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", streamUrl: null },
+      { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOVE972FMAAC.aac" },
+      { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/SYMPHONY924AAC.aac" },
+      { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/RIA897AAC.aac" },
+      { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/WARNA942AAC.aac" },
+      { id: "cna938",      name: "CNA 938",        freq: "93.8",  color: "#8ac926", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/CNA938AAC.aac" },
+      { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/OLI968AAC.aac" },
+      { id: "kiss92",      name: "Kiss92",         freq: "92.0",  color: "#ff006e", streamUrl: "https://live.kiss92.sg/stream" },
+      { id: "onefm",       name: "One FM 91.3",    freq: "91.3",  color: "#3a86ff", streamUrl: "https://live.onefm.sg/stream" },
+      { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/UFM_1003AAC.aac" },
+      { id: "moneyfm",     name: "Money FM 89.3",  freq: "89.3",  color: "#06d6a0", streamUrl: "https://live.moneyfm893.sg/stream" },
     ];
 
     const MOCK_STATIONS = [
@@ -237,8 +276,12 @@
       const el = document.createElement("div");
       el.className = "card";
       el.style.setProperty("--c", s.color);
+      if (s.streamUrl) el.dataset.stream = s.streamUrl;
       el.innerHTML = `
-        <div class="station-name">${s.name}</div>
+        <div style="display:flex;align-items:center;overflow:hidden">
+          <div class="station-name">${s.name}</div>
+          <div class="eq"><span></span><span></span><span></span></div>
+        </div>
         <div class="freq">${s.freq} FM</div>
         <div class="song-info"><div class="state-fetching">Getting info…</div></div>
       `;
@@ -337,6 +380,49 @@
         console.error(e);
       }
     }
+
+    // Tap-to-play
+    const audio = new Audio();
+    let playingId = null;
+
+    function stopStation() {
+      if (!playingId) return;
+      const prev = cards[playingId];
+      if (prev) { prev.classList.remove("playing", "stream-error"); }
+      audio.pause();
+      audio.src = "";
+      audio.load();
+      playingId = null;
+    }
+
+    audio.onerror = () => {
+      if (!playingId) return;
+      const el = cards[playingId];
+      stopStation();
+      if (el) el.classList.add("stream-error");
+    };
+
+    document.querySelectorAll(".card[data-stream]").forEach(el => {
+      el.addEventListener("click", () => {
+        const stationId = Object.keys(cards).find(id => cards[id] === el);
+        if (!stationId) return;
+        if (playingId === stationId) {
+          stopStation();
+          return;
+        }
+        stopStation();
+        audio.src = el.dataset.stream;
+        audio.play().catch(() => {
+          if (playingId === stationId) {
+            stopStation();
+            el.classList.add("stream-error");
+          }
+        });
+        el.classList.add("playing");
+        el.classList.remove("stream-error");
+        playingId = stationId;
+      });
+    });
 
     refresh();
     setInterval(refresh, 30000);
