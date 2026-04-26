@@ -3,9 +3,9 @@ const STATIONS = [
   { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/GOLD905AAC.aac" },
   { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/987FMAAC.aac" },
   { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/YES933AAC.aac" },
-  { id: "capital958",  name: "Capital 95.8",   freq: "95.8",  color: "#f7b731", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/CAPITAL958AAC.aac" },
-  { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/HAO963AAC.aac" },
-  { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOVE972AAC.aac" },
+  { id: "capital958",  name: "Capital 95.8",   freq: "95.8",  color: "#f7b731", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/CAPITAL958FMAAC.aac" },
+  { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/963HAOFMAAC.aac" },
+  { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOVE972FMAAC.aac" },
   { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/SYMPHONY924AAC.aac" },
   { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/RIA897AAC.aac" },
   { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/WARNA942AAC.aac" },
@@ -13,7 +13,7 @@ const STATIONS = [
   { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/OLI968AAC.aac" },
   { id: "kiss92",      name: "Kiss92",         freq: "92.0",  color: "#ff006e", stream: "https://live.kiss92.sg/stream" },
   { id: "onefm",       name: "One FM 91.3",    freq: "91.3",  color: "#3a86ff", stream: "https://live.onefm.sg/stream" },
-  { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec", stream: "https://live.ufm1003.sg/stream" },
+  { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/UFM_1003AAC.aac" },
   { id: "moneyfm",     name: "Money FM 89.3",  freq: "89.3",  color: "#06d6a0", stream: "https://live.moneyfm893.sg/stream" },
 ];
 
