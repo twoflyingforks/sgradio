@@ -4,181 +4,185 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SG Radio — Now Playing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.14);
+      --text-primary: #f0f0f0;
+      --text-secondary: #888;
+      --text-tertiary: #555;
+      --radius: 12px;
+    }
+
     body {
-      background: #0f0f0f;
-      color: #f0f0f0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, sans-serif;
       min-height: 100vh;
+      padding: 24px 32px 40px;
     }
 
     header {
-      padding: 1.25rem 1rem 0.5rem;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 32px;
     }
 
-    header h1 {
-      font-size: 1.25rem;
+    .logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.02em;
     }
 
-    #status {
-      font-size: 0.75rem;
-      color: #666;
+    .logo-sub {
+      font-size: 13px;
+      color: var(--text-tertiary);
     }
-    #status.fetching { color: #888; }
-    #status.ok       { color: #4ade80; }
-    #status.err      { color: #f87171; }
 
     .section {
-      padding: 0.75rem 0 0.25rem;
-    }
-
-    .section + .section {
-      padding-top: 0.5rem;
+      margin-bottom: 28px;
     }
 
     .section-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #444;
-      padding: 0 1rem 0.5rem;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 0.75rem;
-      padding: 0 1rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
     }
 
+    /* Card */
     .card {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+      height: 108px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+
+    .card[data-stream]:hover {
+      border-color: var(--border-hover);
+    }
+
+    .card-content {
+      flex: 1;
+      padding: 14px 12px 14px 14px;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      border-top: 3px solid var(--c);
-      transition: transform 0.15s;
-      min-height: 110px;
+      min-width: 0;
+      z-index: 1;
     }
 
-    .card:active { transform: scale(0.97); }
+    .freq {
+      font-family: 'Space Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
 
     .station-name {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--c);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .freq {
-      font-size: 0.65rem;
-      color: #555;
-      margin-top: -0.2rem;
-    }
-
-    .song-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-top: 0.1rem;
-    }
-
-    .artwork-wrap {
-      flex-shrink: 0;
-      width: 44px;
-      height: 44px;
-    }
-
-    .artwork-placeholder {
-      width: 44px;
-      height: 44px;
-      border-radius: 5px;
-      background: #252525;
-      animation: pulse 1.6s ease-in-out infinite;
-    }
-
-    .artwork {
-      width: 44px;
-      height: 44px;
-      border-radius: 5px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .song-text {
-      flex: 1;
-      min-width: 0;
+    .track-info {
+      margin-top: auto;
     }
 
     .artist {
-      font-size: 0.7rem;
-      color: #aaa;
+      font-size: 11px;
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .title {
-      font-size: 0.82rem;
+      font-size: 12px;
       font-weight: 600;
-      line-height: 1.3;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      color: var(--text-primary);
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* ── Three distinct card states ── */
-
-    /* 1. Fetching: pulsing, clearly in-progress */
-    .state-fetching {
-      font-size: 0.72rem;
-      color: #666;
-      animation: pulse 1.2s ease-in-out infinite;
+    /* Album art panel */
+    .card-art {
+      width: 90px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.03);
+      overflow: hidden;
+      z-index: 1;
     }
 
-    /* 2. No metadata: station live but doesn't broadcast track info */
-    .state-nodata {
-      font-size: 0.72rem;
-      color: #3a3a3a;
+    .card-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    /* 3. Error: station unreachable */
-    .state-error {
-      font-size: 0.72rem;
-      color: #7a3030;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
-
-    .card[data-stream] { cursor: pointer; }
-
+    /* Playing state */
     .card.playing {
-      background: #222;
+      border-top: 2px solid var(--c);
+      border-left-color: var(--border);
+      border-right-color: var(--border);
+      border-bottom-color: var(--border);
     }
 
+    .card.playing::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--c);
+      opacity: 0.10;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card.playing .freq {
+      color: var(--c);
+    }
+
+    /* Equalizer */
     .eq {
       display: none;
+      position: absolute;
+      top: 10px;
+      right: 98px;
       align-items: flex-end;
       gap: 2px;
       height: 14px;
-      margin-left: auto;
-      flex-shrink: 0;
+      z-index: 2;
     }
 
     .card.playing .eq { display: flex; }
@@ -190,26 +194,42 @@
       background: var(--c);
       animation: eq-bounce 0.8s ease-in-out infinite alternate;
     }
-    .eq span:nth-child(1) { animation-duration: 0.6s; }
-    .eq span:nth-child(2) { animation-duration: 0.9s; animation-delay: 0.15s; }
-    .eq span:nth-child(3) { animation-duration: 0.7s; animation-delay: 0.05s; }
+
+    .eq span:nth-child(1) { height: 8px;  animation-duration: 0.5s; }
+    .eq span:nth-child(2) { height: 12px; animation-duration: 0.7s; animation-delay: 0.10s; }
+    .eq span:nth-child(3) { height: 6px;  animation-duration: 0.4s; animation-delay: 0.05s; }
+    .eq span:nth-child(4) { height: 10px; animation-duration: 0.8s; animation-delay: 0.15s; }
 
     @keyframes eq-bounce {
-      from { height: 3px; }
-      to   { height: 14px; }
+      from { height: 30%; }
+      to   { height: 100%; }
     }
 
-    .card.stream-error .station-name::after {
-      content: " ✕";
-      font-size: 0.65rem;
-      color: #f87171;
+    .card.stream-error {
+      border-color: rgba(248,113,113,0.25);
+    }
+
+    footer {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 16px 16px 32px; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .freq { font-size: 20px; }
     }
   </style>
 </head>
 <body>
+
   <header>
-    <h1>SG Radio</h1>
-    <span id="status">—</span>
+    <span class="logo">SG Radio</span>
+    <span class="logo-sub">FM 88—108</span>
   </header>
 
   <div class="section">
@@ -218,18 +238,24 @@
   </div>
 
   <div class="section">
-    <div class="section-label">Others</div>
-    <div id="grid-others" class="grid"></div>
+    <div class="section-label">English</div>
+    <div id="grid-english" class="grid"></div>
   </div>
+
+  <div class="section">
+    <div class="section-label">Malay &amp; Tamil</div>
+    <div id="grid-malay" class="grid"></div>
+  </div>
+
+  <footer id="status"></footer>
 
   <script>
     const WORKER_URL = "https://sg-radio-now-playing.sgradio.workers.dev";
     const USE_MOCK = false;
 
     const CHINESE_IDS = new Set(["yes933", "capital958", "hao963", "love972", "ufm100"]);
+    const MALAY_IDS   = new Set(["ria897", "warna942", "oli968"]);
 
-    // Scaffold used to create cards immediately on load (before first fetch).
-    // Kept in sync with worker.js STATIONS order.
     const SCAFFOLD = [
       { id: "class95",     name: "Class 95",      freq: "95.0",  color: "#e63946", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/CLASS95AAC.aac" },
       { id: "gold905",     name: "Gold 90.5",      freq: "90.5",  color: "#f4a261", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/GOLD905AAC.aac" },
@@ -239,10 +265,10 @@
       { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/HAO_963AAC.aac" },
       { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOVE972FMAAC.aac" },
       { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/SYMPHONY924AAC.aac" },
-      { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/RIA897AAC.aac" },
-      { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/WARNA942AAC.aac" },
+      { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/RIA897FM.aac" },
+      { id: "warna942",    name: "Warna 94.2",     freq: "94.2",  color: "#4fc3f7", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/WARNA942FM.aac" },
       { id: "cna938",      name: "CNA 938",        freq: "93.8",  color: "#8ac926", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/CNA938AAC.aac" },
-      { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/OLI968AAC.aac" },
+      { id: "oli968",      name: "Oli 96.8",       freq: "96.8",  color: "#ff595e", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/OLI968FM.aac" },
       { id: "kiss92",      name: "Kiss92",         freq: "92.0",  color: "#ff006e", streamUrl: "https://live.kiss92.sg/stream" },
       { id: "onefm",       name: "One FM 91.3",    freq: "91.3",  color: "#3a86ff", streamUrl: "https://live.onefm.sg/stream" },
       { id: "ufm100",      name: "UFM 100.3",      freq: "100.3", color: "#8338ec", streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/UFM_1003AAC.aac" },
@@ -263,7 +289,7 @@
       { id: "cna938",      artist: null,             title: null },
       { id: "oli968",      artist: "A.R. Rahman",    title: "Jai Ho" },
       { id: "kiss92",      artist: "Dua Lipa",       title: "Levitating" },
-      { id: "onefm",       artist: null,             title: null,  error: "timeout" },
+      { id: "onefm",       artist: null,             title: null, error: "timeout" },
       { id: "ufm100",      artist: "邓紫棋",          title: "光年之外" },
       { id: "moneyfm",     artist: null,             title: "Morning Market Watch" },
     ];
@@ -271,31 +297,35 @@
     const statusEl = document.getElementById("status");
     const cards = {};
 
-    // Build all cards immediately with fetching state — no blank flash on load.
     SCAFFOLD.forEach(s => {
       const el = document.createElement("div");
       el.className = "card";
       el.style.setProperty("--c", s.color);
       if (s.streamUrl) el.dataset.stream = s.streamUrl;
       el.innerHTML = `
-        <div style="display:flex;align-items:center;overflow:hidden">
+        <div class="card-content">
+          <div class="freq">${s.freq}</div>
           <div class="station-name">${s.name}</div>
-          <div class="eq"><span></span><span></span><span></span></div>
+          <div class="track-info"></div>
         </div>
-        <div class="freq">${s.freq} FM</div>
-        <div class="song-info"><div class="state-fetching">Getting info…</div></div>
+        <div class="eq"><span></span><span></span><span></span><span></span></div>
+        <div class="card-art"></div>
       `;
-      const grid = document.getElementById(CHINESE_IDS.has(s.id) ? "grid-chinese" : "grid-others");
-      grid.appendChild(el);
+
+      let gridId;
+      if (CHINESE_IDS.has(s.id))     gridId = "grid-chinese";
+      else if (MALAY_IDS.has(s.id))  gridId = "grid-malay";
+      else                            gridId = "grid-english";
+
+      document.getElementById(gridId).appendChild(el);
       cards[s.id] = el;
     });
 
-    // iTunes Search API for album artwork — cached by "artist|title"
     const artworkCache = {};
     async function fetchArtwork(artist, title) {
       const key = `${artist}|${title}`;
       if (key in artworkCache) return artworkCache[key];
-      artworkCache[key] = null; // prevent duplicate requests
+      artworkCache[key] = null;
       try {
         const q = encodeURIComponent(`${artist} ${title}`);
         const res = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=1&entity=song`);
@@ -310,36 +340,25 @@
     }
 
     function setCardSong(el, s) {
-      const info = el.querySelector(".song-info");
-      if (s.error) {
-        info.innerHTML = `<div class="state-error">Station unreachable</div>`;
-        return;
-      }
-      if (!s.title) {
-        info.innerHTML = `<div class="state-nodata">No track info</div>`;
-        return;
-      }
-      const artistHtml = s.artist ? `<div class="artist">${esc(s.artist)}</div>` : "";
-      info.innerHTML = `
-        <div class="song-row">
-          <div class="artwork-wrap"><div class="artwork-placeholder"></div></div>
-          <div class="song-text">${artistHtml}<div class="title">${esc(s.title)}</div></div>
-        </div>`;
+      const info = el.querySelector(".track-info");
+      const artPanel = el.querySelector(".card-art");
 
-      const wrap = info.querySelector(".artwork-wrap");
-      const artworkUrl = s.artwork || null;
-      if (artworkUrl) {
-        // Worker already supplied artwork (e.g. Firebase stations)
-        wrap.innerHTML = `<img class="artwork" src="${artworkUrl}" alt="" loading="lazy">`;
+      if (!s.title) {
+        info.innerHTML = "";
+        artPanel.innerHTML = "";
+        return;
+      }
+
+      const artistHtml = s.artist ? `<div class="artist">${esc(s.artist)}</div>` : "";
+      info.innerHTML = `${artistHtml}<div class="title">${esc(s.title)}</div>`;
+
+      if (s.artwork) {
+        artPanel.innerHTML = `<img src="${s.artwork}" alt="" loading="lazy">`;
       } else if (s.artist) {
-        // Look up via iTunes
         fetchArtwork(s.artist, s.title).then(url => {
-          if (!info.isConnected) return;
-          if (url) wrap.innerHTML = `<img class="artwork" src="${url}" alt="" loading="lazy">`;
-          else wrap.style.display = "none";
+          if (!artPanel.isConnected) return;
+          if (url) artPanel.innerHTML = `<img src="${url}" alt="" loading="lazy">`;
         });
-      } else {
-        wrap.style.display = "none";
       }
     }
 
@@ -348,14 +367,10 @@
     }
 
     function fmtTime(ts) {
-      return new Date(ts).toLocaleTimeString("en-SG", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      });
+      return new Date(ts).toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
     }
 
     async function refresh() {
-      statusEl.textContent = "Updating…";
-      statusEl.className = "fetching";
       try {
         let stations;
         if (USE_MOCK) {
@@ -373,10 +388,7 @@
           if (el) setCardSong(el, s);
         });
         statusEl.textContent = `Updated ${fmtTime(Date.now())}`;
-        statusEl.className = "ok";
       } catch (e) {
-        statusEl.textContent = "Error — retrying…";
-        statusEl.className = "err";
         console.error(e);
       }
     }
@@ -388,7 +400,7 @@
     function stopStation() {
       if (!playingId) return;
       const prev = cards[playingId];
-      if (prev) { prev.classList.remove("playing", "stream-error"); }
+      if (prev) prev.classList.remove("playing", "stream-error");
       audio.pause();
       audio.src = "";
       audio.load();
@@ -406,17 +418,11 @@
       el.addEventListener("click", () => {
         const stationId = Object.keys(cards).find(id => cards[id] === el);
         if (!stationId) return;
-        if (playingId === stationId) {
-          stopStation();
-          return;
-        }
+        if (playingId === stationId) { stopStation(); return; }
         stopStation();
         audio.src = el.dataset.stream;
         audio.play().catch(() => {
-          if (playingId === stationId) {
-            stopStation();
-            el.classList.add("stream-error");
-          }
+          if (playingId === stationId) { stopStation(); el.classList.add("stream-error"); }
         });
         el.classList.add("playing");
         el.classList.remove("stream-error");
