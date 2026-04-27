@@ -4,7 +4,7 @@ const STATIONS = [
   { id: "987fm",       name: "987FM",          freq: "98.7",  color: "#2a9d8f", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/987FMAAC.aac" },
   { id: "yes933",      name: "YES 93.3",       freq: "93.3",  color: "#e9c46a", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/YES933AAC.aac" },
   { id: "capital958",  name: "Capital 95.8",   freq: "95.8",  color: "#f7b731", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/CAPITAL958FMAAC.aac" },
-  { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", firebaseId: 4 },
+  { id: "hao963",      name: "Hao FM 96.3",    freq: "96.3",  color: "#26c6da", tritonMount: "HAO_963AAC" },
   { id: "love972",     name: "Love 97.2",      freq: "97.2",  color: "#e76f51", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOVE972FMAAC.aac" },
   { id: "symphony924", name: "Symphony 92.4",  freq: "92.4",  color: "#a8dadc", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/SYMPHONY924AAC.aac" },
   { id: "ria897",      name: "Ria 89.7",       freq: "89.7",  color: "#b388ff", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/RIA897AAC.aac" },
