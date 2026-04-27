@@ -84,17 +84,31 @@ function meta(s) {
   return { id: s.id, name: s.name, freq: s.freq, color: s.color };
 }
 
+const CACHE_TTL = 30; // seconds
+const CACHE_KEY = new Request("https://sgradio/nowplaying");
+
 export default {
   async fetch(request) {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET" } });
     }
+
+    const cache = caches.default;
+    const cached = await cache.match(CACHE_KEY);
+    if (cached) return cached;
+
     const results = await Promise.all(STATIONS.map(s => {
       if (s.tritonMount) return fetchTriton(s);
       return fetchNowPlaying(s);
     }));
-    return new Response(JSON.stringify({ stations: results, ts: Date.now() }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
+    const response = new Response(JSON.stringify({ stations: results, ts: Date.now() }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": `public, max-age=${CACHE_TTL}`,
+      },
     });
+    await cache.put(CACHE_KEY, response.clone());
+    return response;
   },
 };
