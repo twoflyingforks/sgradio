@@ -30,7 +30,7 @@
 
     header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 12px;
       margin-bottom: 32px;
     }
@@ -45,6 +45,45 @@
     .logo-sub {
       font-size: 13px;
       color: var(--text-tertiary);
+    }
+
+    .refresh-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+    }
+
+    .refresh-indicator svg {
+      transform: rotate(-90deg);
+      flex-shrink: 0;
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: rgba(255,255,255,0.07);
+      stroke-width: 2;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: var(--text-tertiary);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 69.115;
+      stroke-dashoffset: 0;
+      transition: stroke 0.4s;
+    }
+
+    .ring-progress.fetching {
+      stroke: var(--text-secondary);
+    }
+
+    #updated-time {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.02em;
     }
 
     .section {
@@ -230,6 +269,13 @@
   <header>
     <span class="logo">SG Radio</span>
     <span class="logo-sub">FM 88—108</span>
+    <div class="refresh-indicator">
+      <svg width="22" height="22" viewBox="0 0 22 22">
+        <circle class="ring-track" cx="11" cy="11" r="9"/>
+        <circle class="ring-progress" id="countdown-ring" cx="11" cy="11" r="9"/>
+      </svg>
+      <span id="updated-time">—</span>
+    </div>
   </header>
 
   <div class="section">
@@ -247,7 +293,6 @@
     <div id="grid-malay" class="grid"></div>
   </div>
 
-  <footer id="status"></footer>
 
   <script>
     const WORKER_URL = "https://sg-radio-now-playing.sgradio.workers.dev";
@@ -294,7 +339,20 @@
       { id: "moneyfm",     artist: null,             title: "Morning Market Watch" },
     ];
 
-    const statusEl = document.getElementById("status");
+    const ring = document.getElementById("countdown-ring");
+    const updatedTime = document.getElementById("updated-time");
+    const CIRCUMFERENCE = 2 * Math.PI * 9; // r=9 → ≈56.55
+    const REFRESH_INTERVAL = 30000;
+    let lastRefreshTime = Date.now();
+
+    ring.style.strokeDasharray = CIRCUMFERENCE;
+
+    setInterval(() => {
+      const elapsed = Date.now() - lastRefreshTime;
+      const fraction = Math.min(elapsed / REFRESH_INTERVAL, 1);
+      ring.style.strokeDashoffset = fraction * CIRCUMFERENCE;
+    }, 100);
+
     const cards = {};
 
     SCAFFOLD.forEach(s => {
@@ -371,6 +429,7 @@
     }
 
     async function refresh() {
+      ring.classList.add("fetching");
       try {
         let stations;
         if (USE_MOCK) {
@@ -387,9 +446,13 @@
           const el = cards[s.id];
           if (el) setCardSong(el, s);
         });
-        statusEl.textContent = `Updated ${fmtTime(Date.now())}`;
+        lastRefreshTime = Date.now();
+        ring.style.strokeDashoffset = 0;
+        updatedTime.textContent = fmtTime(lastRefreshTime);
       } catch (e) {
         console.error(e);
+      } finally {
+        ring.classList.remove("fetching");
       }
     }
 
